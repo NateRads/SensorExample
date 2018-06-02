@@ -1,3 +1,5 @@
+/*Author Naterads*/
+
 #include "mpu6050dec.h"
 #include <Wire.h>
 
