@@ -1,4 +1,5 @@
-/*Author Naterads*/
+/*Author: Naterads
+Working on headtracking*/
 
 #include "mpu6050dec.h"
 #include <Wire.h>
