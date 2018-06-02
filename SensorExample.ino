@@ -3,6 +3,7 @@ Working on headtracking*/
 
 #include "mpu6050dec.h"
 #include <Wire.h>
+#include <math.h>
 
 mpuVals mVals;
 mpuVals biasVals;
@@ -25,28 +26,34 @@ void setup() {
 
   //configure the biases
   Serial.println("Configuring biases");  
-  findBias(&biasVals);
-  //use a longer slower method that uses less memory
-  
+  findBias();  
 }
 
 //calculates the bias on each axis
-void findBias(mpuVals* v){
-  Serial.print("gx: ");
-  (*v).gyro_x = biasHelper(GYRO_XOUT_H);
-  Serial.print("gy: ");
-  (*v).gyro_y = biasHelper(GYRO_YOUT_H);
-  Serial.print("gz: ");
-  (*v).gyro_z = biasHelper(GYRO_ZOUT_H);
-//accelerometer does not have a bias
-//  Serial.print("ax: ");
-//  (*v).accel_x = biasHelper(ACCEL_XOUT_H);
-//  Serial.print("ay: ");
-//  (*v).accel_y = biasHelper(ACCEL_YOUT_H);
-//  Serial.print("az: ");
-//  (*v).accel_z = biasHelper(ACCEL_ZOUT_H);
+void findBias(){
+  Serial.print("gx: ");//roll
+  biasVals.gyro_x = biasHelper(GYRO_XOUT_H);
+  Serial.print("gy: ");//pitch
+  biasVals.gyro_y = biasHelper(GYRO_YOUT_H);
+  Serial.print("gz: ");//yaw
+  biasVals.gyro_z = biasHelper(GYRO_ZOUT_H);
+//accelerometer does not have a bias, but will have bias angles for pitch and angle for the starting position
+  //to do calculate pitch and roll bias values
 }
 
+//finds pitch from accelerometer readings
+double accel_pitch(){
+  double yd = (double)mVals.accel_y, zd = (double)mVals.accel_z;
+  double acc_pitch = asin(zd/(sqrt(yd*yd + zd*zd)));//in radians
+  return acc_pitch*180/M_PI; //converts to degrees
+}
+
+//finds roll from accelerometer readings
+double accel_roll(){
+  double xd = (double)mVals.accel_x, zd = (double)mVals.accel_z;
+  double accel_roll = asin(zd/(sqrt(xd*xd + zd*zd)));//in radians
+  return accel_roll*180/M_PI;//converts to degrees
+}
 
 
 //called by the findbias function is a helper method
@@ -65,18 +72,18 @@ void loop() {
 }
 
 //pulls all the raw values from the sensor and puts them in the referenced value
-void readValues(mpuVals* v){
+void readValues(){
   Wire.beginTransmission(MPU_address);
   Wire.write(ACCEL_XOUT_H);
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_address,14,1);
-  (*v).accel_x = Wire.read() << 8 | Wire.read();
-  (*v).accel_y = Wire.read() << 8 | Wire.read();
-  (*v).accel_z = Wire.read() << 8 | Wire.read();
-  (*v).temp = Wire.read() << 8 | Wire.read();//temperature
-  (*v).gyro_x = Wire.read() << 8 | Wire.read();
-  (*v).gyro_y = Wire.read() << 8 | Wire.read();
-  (*v).gyro_z = Wire.read() << 8 | Wire.read();
+  mVals.accel_x = Wire.read() << 8 | Wire.read();
+  mVals.accel_y = Wire.read() << 8 | Wire.read();
+  mVals.accel_z = Wire.read() << 8 | Wire.read();
+  mVals.temp = Wire.read() << 8 | Wire.read();//temperature
+  mVals.gyro_x = Wire.read() << 8 | Wire.read();
+  mVals.gyro_y = Wire.read() << 8 | Wire.read();
+  mVals.gyro_z = Wire.read() << 8 | Wire.read();
 }
 
 
