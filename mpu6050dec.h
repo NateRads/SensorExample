@@ -4,9 +4,13 @@
 
 //config registers
 #define MPU_GYRO_CONFIG 0x1B
+#define MPU_ACCEL_CONFIG 0x1C
+#define MPU_INTERRUPT_REGISTER 0x38
+#define MPU_DATAREADY_INTERRUPT 0x1 
 
 //values used to set range of sensors
 #define MPU_FS500 0x08 //+/- 500 deg/sec 
+#define MPU_FS2G 0x0
 #define MPU_FSMASK 0x18
 
 //output registers
@@ -26,6 +30,7 @@
 #define GYRO_ZOUT_L 0x48
 
 //Readings from mpu6050 gyro/accelerometer
+//will reuse to store biases
 struct mpuVals{
   int16_t gyro_x;
   int16_t gyro_y;
@@ -33,5 +38,6 @@ struct mpuVals{
   int16_t accel_x;
   int16_t accel_y;
   int16_t accel_z;
+  int16_t temp;
 };
 
