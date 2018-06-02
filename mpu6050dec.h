@@ -41,3 +41,11 @@ struct mpuVals{
   int16_t temp;
 };
 
+struct mpuBias{
+  int16_t gyro_x;
+  int16_t gyro_y;
+  int16_t gyro_z;
+  int16_t accel_roll;
+  int16_t accel_pitch;
+};
+
