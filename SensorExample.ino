@@ -2,15 +2,19 @@
 #include <Wire.h>
 
 mpuVals mVals;
-double angle = 0;
+int anglePSec = 0;//changed to int
 
 //these change for different sensitivity values
 const double inLow = -32768, inHigh = 32767, outLow = -500, outHigh = 500;
-const double gyro_x_bias = 4.45;
+long gyro_x_bias = 0;
+double angle = 0;
+const double gyroScalingFactor = 65.5;
 const int filterSize = 20;
+const long calibrationSize = 2000;
 int filterPointer = 0;
 double gyro_x_filter[filterSize];
-unsigned long t1 = 0,t2 = 0, x1=0, x2=0; //for integration by first principles
+unsigned long t1 = 0,t2 = 0;
+double x1=0, x2=0; //for integration by first principles
 
 void setup() {
   
@@ -23,13 +27,32 @@ void setup() {
   Wire.begin();
   writeByte(MPU_powerMan,0);
   writeByte(MPU_GYRO_CONFIG, MPU_FS500);//set the sensitivity of gyro
-  
+
   Serial.print("Printing gyroscope sensitivity register: ");
   Serial.println(readRegister(MPU_GYRO_CONFIG));
-  //Serial.println("Printing Gyroscope x-axis values");
 
+  //Configure the x axis
+  delay(3000);
+  gyro_x_bias = calibrateSensor(ACCEL_XOUT_H);
+  Serial.println("Printing Gyroscope x-axis values");
   //setup interrupts
   
+}
+
+//
+int calibrateSensor(int8_t addr){
+  int bias = 0;
+  long sum = 0;
+  Serial.println("Calibrating sensor ...");
+  for(int i = 0; i<calibrationSize;i++){
+    sum += readValueRegister(GYRO_XOUT_H);
+  }
+  Serial.print("Has sum of: ");
+  Serial.println(sum);
+  bias = (int)(sum/calibrationSize);
+  Serial.print("Finished calibration. Bias is: ");
+  Serial.println(bias);
+  return bias;
 }
 
 void filterInit(){
@@ -39,16 +62,23 @@ void filterInit(){
 }
 
 void loop() {
-  mVals.gyro_x = readValueRegister(GYRO_XOUT_H);//get the raw value
+  mVals.gyro_x = readValueRegister(GYRO_XOUT_H) - gyro_x_bias;//get the raw value
   //angle = ((double)500/(double)32768)*(double)mVals.gyro_x; //make more precise
-  angle = (((double)mVals.gyro_x - inLow)/(inHigh - inLow))*(outHigh - outLow) + outLow + gyro_x_bias;//when you want to make sure everything is a double
-  gyro_x_filter[filterPointer] = angle;
-  filterPointer = (filterPointer + 1) % filterSize; //first 10 readings should be ignored
-  
+  //angle = (((double)mVals.gyro_x - inLow)/(inHigh - inLow))*(outHigh - outLow) + outLow + gyro_x_bias;//when you want to make sure everything is a double
+  //gyro_x_filter[filterPointer] = angle;
+  //filterPointer = (filterPointer + 1) % filterSize; //first 10 readings should be ignored
+  anglePSec = mVals.gyro_x/gyroScalingFactor;
+  angleInteg((double)anglePSec);
   Serial.println();
-  Serial.print(angleInteg());
-  Serial.print(" deg, from raw value: ");
-  Serial.println(mVals.gyro_x);
+  //Serial.print(angleInteg());
+  Serial.print(anglePSec);
+  Serial.print(" deg/s, from raw value: ");
+  Serial.print(mVals.gyro_x);
+  Serial.print(" gives angle of: ");
+  Serial.println(angle);
+  //Serial.print(" after bias removal: ");
+  //mVals.gyro_x = mVals.gyro_x - gyro_x_bias;
+  //Serial.println(mVals.gyro_x);
   //delay(10);
 }
 
@@ -68,13 +98,12 @@ void readValues(mpuVals* v){
 
 //can be made more efficient
 //integrates from first principles
-double angleInteg(){
+void angleInteg(double dps){
   t2 = millis();
-  x2 = aveFilter();
+  x2 = dps;
   angle += x2 * ((double)t2/1000.0-(double)t1/1000.0) + 0.5* (x2 - x1)*((double)t2/1000.0-(double)t1/1000.0);
   t1 = t2;
   x1 = x2;
-  return angle;
 }
 
 //reads a single value from two part register
