@@ -55,14 +55,14 @@ void findBias(){
 //finds pitch from accelerometer readings
 double accel_pitch(){
   double yd = (double)mVals.accel_y, zd = (double)mVals.accel_z;
-  double acc_pitch = asin(zd/(sqrt(yd*yd + zd*zd)));//in radians
+  double acc_pitch = acos(zd/(sqrt(yd*yd + zd*zd)));//in radians
   return acc_pitch*180/M_PI; //converts to degrees
 }
 
 //finds roll from accelerometer readings
 double accel_roll(){
   double xd = (double)mVals.accel_x, zd = (double)mVals.accel_z;
-  double accel_roll = asin(zd/(sqrt(xd*xd + zd*zd)));//in radians
+  double accel_roll = acos(zd/(sqrt(xd*xd + zd*zd)));//in radians
   return accel_roll*180/M_PI;//converts to degrees
 }
 
