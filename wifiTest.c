@@ -1,6 +1,6 @@
 /*Author NateRads
 Provides functions to connect to a wifi network and send the sensor data to a host*/
-#include <ESP8226WiFi.h>
+/*#include <ESP8266WiFi.h>
 
 //use wifi to store data on feather
 //and store them on the feather until they're no longer valid
@@ -17,4 +17,4 @@ boolean connectWifi(char* ssid, char* ssid_password){
   Serial.println("Wifi Connected");
   return true;
 }
-
+*/
