@@ -15,5 +15,6 @@ boolean connectWifi(char* ssid, char* ssid_password){
   }
   Serial.println();
   Serial.println("Wifi Connected");
+  return true;
 }
 
