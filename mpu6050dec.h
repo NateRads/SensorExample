@@ -1,7 +1,7 @@
 //includes the register definitions and a structure for reading values from sensor
 #define MPU_address 0x68
 #define MPU_powerMan 0x6B
-
+#define MPU_RESET 0x80
 //config registers
 #define MPU_GYRO_CONFIG 0x1B
 #define MPU_ACCEL_CONFIG 0x1C
@@ -45,7 +45,15 @@ struct mpuBias{
   int16_t gyro_x;
   int16_t gyro_y;
   int16_t gyro_z;
-  int16_t accel_roll;
-  int16_t accel_pitch;
+  double accel_roll;
+  double accel_pitch;
+};
+
+struct mpuAngles{
+  double g_pitch;
+  double g_yaw;
+  double g_roll;
+  double a_pitch;
+  double a_roll;
 };
 

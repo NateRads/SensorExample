@@ -6,7 +6,8 @@ Working on headtracking*/
 #include <math.h>
 
 mpuVals mVals;
-mpuVals biasVals;
+mpuBias biasVals;
+mpuAngles angleVals;
 
 const int biasArrayLength = 500;
 int bias[biasArrayLength];
@@ -19,6 +20,9 @@ void setup() {
   Serial.println("Configuring registers");
 
   //configure MPU6050 registers
+  //reset the sensor
+  writeByte(MPU_powerMan,MPU_RESET);
+  delay(500);
   writeByte(MPU_powerMan,0); //wakes up mpu6050
   writeByte(MPU_GYRO_CONFIG, MPU_FS500);//set the sensitivity of gyro
   writeByte(MPU_ACCEL_CONFIG, MPU_FS2G);//set sensitivity of accelerometer
@@ -37,6 +41,13 @@ void findBias(){
   biasVals.gyro_y = biasHelper(GYRO_YOUT_H);
   Serial.print("gz: ");//yaw
   biasVals.gyro_z = biasHelper(GYRO_ZOUT_H);
+  Serial.print("aroll: ");
+  readValues();
+  biasVals.accel_roll = accel_roll();
+  Serial.println(biasVals.accel_roll);
+  Serial.print("apitch: ");
+  biasVals.accel_pitch = accel_pitch();
+  Serial.println(biasVals.accel_pitch);
 //accelerometer does not have a bias, but will have bias angles for pitch and angle for the starting position
   //to do calculate pitch and roll bias values
 }
@@ -68,7 +79,23 @@ int16_t biasHelper(uint8_t addr){
 }
 
 void loop() {
+  //print roll and pitch from accelerometer
+  readValues();
+  computeAngles();
+  Serial.print(angleVals.a_pitch);
+  Serial.print("\t");
+  Serial.println(angleVals.a_roll);
   //todo
+}
+
+//computes the translation angles from the values writen to vals registers
+void computeAngles(){
+  angleVals.a_pitch = accel_pitch();
+  angleVals.a_roll = accel_roll();
+  //todo
+  angleVals.g_pitch = 0;
+  angleVals.g_roll = 0;
+  angleVals.g_yaw = 0;
 }
 
 //pulls all the raw values from the sensor and puts them in the referenced value
