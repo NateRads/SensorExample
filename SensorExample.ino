@@ -17,6 +17,7 @@ kalmanFilter* kF_G_Z;//gyros z axis kalman filter
 double estError = 10;
 double estimate = 0;
 double measurement = 0;
+uint8_t sleepCheck;
 
 void setup() {
   Serial.begin(9600);
@@ -28,9 +29,11 @@ void setup() {
 
   //configure MPU6050 registers
   //reset the sensor
-  writeByte(MPU_powerMan,MPU_RESET);
-  delay(500);
+  //writeByte(MPU_powerMan,MPU_RESET);
+  delay(1000);
   writeByte(MPU_powerMan,0); //wakes up mpu6050
+  Serial.print("Power management register should be 0 is ");
+  Serial.println(readRegister(MPU_powerMan));
   writeByte(MPU_GYRO_CONFIG, MPU_FS500);//set the sensitivity of gyro
   writeByte(MPU_ACCEL_CONFIG, MPU_FS2G);//set sensitivity of accelerometer
   //writeByte(MPU_INTERRUPT_REGISTER, MPU_DATAREADY_INTERRUPT); //enables interrupts when new data is in sensors registers
@@ -47,6 +50,14 @@ void setup() {
 
 //the main loop being executed by microcontroller
 void loop() {
+  //check it hasn't gone back to sleep
+  sleepCheck = (readRegister(0x6B) & 0x40);
+  if(sleepCheck == 0x40){
+    Serial.println("The Device has gone to sleep");
+    Serial.print("Here is the register value ");
+    Serial.println(readRegister(0x6B));
+  }
+   
   //take a measurement
   readValues();
   measurement = (double)mVals.gyro_z;
