@@ -1,9 +1,11 @@
-/*Author: Naterads
+ /*Author: Naterads
 Working on headtracking*/
 
 #include "mpu6050dec.h"
+#include "KalmanFilter.h"
 #include <Wire.h>
 #include <math.h>
+
 
 mpuVals mVals;
 mpuBias biasVals;
@@ -11,9 +13,14 @@ mpuAngles angleVals;
 
 const int biasArrayLength = 500;
 int bias[biasArrayLength];
+kalmanFilter* kF_G_Z;//gyros z axis kalman filter
+double estError = 10;
+double estimate = 0;
+double measurement = 0;
 
 void setup() {
   Serial.begin(9600);
+  Serial.println();
   Serial.println("InvenSense MPU-6050 ReWrite");
   Serial.println("May 2018");
   Wire.begin();
@@ -29,8 +36,27 @@ void setup() {
   //writeByte(MPU_INTERRUPT_REGISTER, MPU_DATAREADY_INTERRUPT); //enables interrupts when new data is in sensors registers
 
   //configure the biases
-  Serial.println("Configuring biases");  
-  findBias();  
+  //Serial.println("Configuring biases");  
+  //findBias();
+  Serial.println("Find error in z measurement");
+  Serial.print("Error: ");
+  int16_t eMeas_Z = calcMeasurementError();
+  Serial.println(eMeas_Z);
+  kF_G_Z= new kalmanFilter(eMeas_Z, estError);
+}
+
+//the main loop being executed by microcontroller
+void loop() {
+  //take a measurement
+  readValues();
+  measurement = (double)mVals.gyro_z;
+  //use the kalman filter to get an estimate from the raw data
+  estimate = kF_G_Z->filter(measurement);
+  //print the results to the screen
+  Serial.print("Meas: ");
+  Serial.print(mVals.gyro_z);
+  Serial.print("\tEst: ");
+  Serial.println(estimate);
 }
 
 //calculates the bias on each axis
@@ -78,15 +104,7 @@ int16_t biasHelper(uint8_t addr){
   return (int16_t)total;
 }
 
-void loop() {
-  //print roll and pitch from accelerometer
-  readValues();
-  computeAngles();
-  Serial.print(angleVals.a_pitch);
-  Serial.print("\t");
-  Serial.println(angleVals.a_roll);
-  //todo
-}
+
 
 //computes the translation angles from the values writen to vals registers
 void computeAngles(){
@@ -150,3 +168,26 @@ void writeByte(uint8_t addr, uint8_t value){
   Wire.write(value);
   Wire.endTransmission(true);
 }
+
+//finds the error from a single sensor +- a certain value
+int16_t calcMeasurementError(){
+  const unsigned int testMinMax = 2000;
+  readValues();
+  int16_t temp = mVals.gyro_z;
+  int16_t mini = temp, maxi = temp;
+  //find maximum and minimum values over 2000 iterations
+  for(int i = 0; i<testMinMax; i++){
+    readValues();
+    temp = mVals.gyro_z;
+    if(temp > maxi){
+      maxi = temp;
+    }
+    if(temp < mini){
+      mini = temp;
+    }
+  }
+ //find the middle to find the error in measurement
+ temp = abs(maxi - mini);
+ return temp/2;
+}
+
